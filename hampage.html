@@ -1,0 +1,144 @@
+<html>
+  <head>
+	<link type="text/css" rel="stylesheet" href="graph.css">
+	<link type="text/css" rel="stylesheet" href="detail.css">
+	<link type="text/css" rel="stylesheet" href="lines.css">
+	<link type="text/css" rel="stylesheet" href="jquery-ui-1.11.1.custom/jquery-ui.min.css">
+
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="jquery-2.1.1.js"></script>
+    <script type="text/javascript" src="jquery-ui-1.11.1.custom/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="d3.min.js"></script>
+    <script type="text/javascript" src="rickshaw.js"></script>
+   <script type="text/javascript">
+
+   $(function() {
+
+	var scales = [d3.scale.linear().domain([0,100]).nice(),
+			    d3.scale.linear().domain([0,100]).nice(),
+			    d3.scale.linear().domain([0,100]).nice()
+				];
+
+	$.ajax({
+		url: "historic",
+		success: function(d, stat, jqXHR) {
+
+		 	var series = JSON.parse(d)
+	
+
+ 		        graph = new Rickshaw.Graph({
+				element: $("#chart")[0],
+				width: 600,
+				height: 200,
+				renderer: 'line',
+				dataURL: 'historic',
+				series: new Rickshaw.Series([{
+							name: 'Temperature',
+							color: 'Orange',
+							data: series[0].data,
+							scale: scales[0]
+						}, {
+							name: 'Humidity',
+							color: 'LightBlue',
+							data: series[1].data,
+							scale: scales[1]
+						}, {
+							name: 'Light Level',
+							color: 'Red',
+							data: series[2].data,
+							scale: scales[2]
+						}
+           			])
+			});
+
+	new Rickshaw.Graph.Axis.Y.Scaled({
+		element: document.getElementById('axis0'),
+		graph: graph,
+		orientation: 'left',
+		scale: scales[0],
+		tickFormat: Rickshaw.Fixtures.Number.formatKMBT
+	});
+	
+	new Rickshaw.Graph.Axis.Y.Scaled({
+		element: document.getElementById('axis1'),
+		graph: graph,
+		grid: false,
+		orientation: 'right',
+		scale: scales[1],
+		tickFormat: Rickshaw.Fixtures.Number.formatKMBT
+	});
+
+
+	new Rickshaw.Graph.Axis.Time({
+		graph: graph,
+    		timeFixture: new Rickshaw.Fixtures.Time.Local()
+	});
+	
+	new Rickshaw.Graph.HoverDetail({
+		graph: graph
+	});
+
+	var slider = new Rickshaw.Graph.RangeSlider({
+		graph: graph,
+		element: document.querySelector('#slider')
+	});
+	
+	graph.render();
+
+	setInterval(getHamData, 10000);
+
+		}
+	});
+
+   	function getHamData() {
+   		$.ajax( {
+ 			url: "ham",
+			success: function(d,stat,jqXHR) {
+				var hamdata = JSON.parse(d);
+        			 	graph.series[0].data.push({ x:Date.parse(hamdata.time)/1000, y: hamdata.temp});
+         			graph.series[1].data.push({ x:Date.parse(hamdata.time)/1000, y:hamdata.humid});
+         			graph.series[2].data.push({ x:Date.parse(hamdata.time)/1000, y:hamdata.light});
+				graph.update();
+			}
+		} );
+	}
+
+    });
+
+    </script>
+  </head>
+
+  <body>
+ <style type="text/css">
+  #axis0 {
+    position: absolute;
+    height: 800px;
+    width: 40px;
+  }
+  #axis1 {
+    position: absolute;
+    left: 1050px;
+    height: 800px;
+    width: 40px;
+  }
+  #chart {
+    left: 50px;
+    width: 1000px;
+    position: absolute;
+  }
+  #slider {
+    left: 50px;
+    width: 1000px;
+    top: 250px;
+    position: absolute;
+  }
+</style>
+<div id="axis0"></div>
+<div id="chart"></div>
+<div id="axis1"></div>
+<div id="slider"></div>
+
+
+  </body>
+</html>
+
